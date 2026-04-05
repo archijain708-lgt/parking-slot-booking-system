@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParkEase Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+        }
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 1.2rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        th {
+            color: var(--text-muted);
+            font-weight: 600;
+            background: rgba(0,0,0,0.2);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        tr:hover td {
+            background: rgba(255,255,255,0.02);
+        }
+        .badge {
+            padding: 0.3rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .badge.active { background: rgba(16, 185, 129, 0.2); color: var(--primary); border: 1px solid var(--primary); }
+        .badge.expired { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+        .btn-small { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <div class="bg-shape circle-1"></div>
+    <div class="bg-shape circle-2"></div>
+    
+    <div id="app-container" style="max-width: 1200px;">
+        <header>
+            <div class="logo">ParkEase<span>.</span> <span style="font-size: 1rem; color: #94a3b8; font-weight: normal;">/ Admin</span></div>
+            <nav>
+                <a href="index.html">Book Spot</a>
+                <a href="admin.html" class="active">Admin Dashboard</a>
+            </nav>
+        </header>
+
+        <main id="main-view">
+            <div class="section-header" style="text-align: left;">
+                <h2>Overview Dashboard</h2>
+                <p>Real-time mock operations data for your managed locations.</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-total">1,250</div>
+                    <div class="stat-label">Total System Slots</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-occ">945</div>
+                    <div class="stat-label">Currently Occupied</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-avail">305</div>
+                    <div class="stat-label">Available Slots</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-rev">₹1,45,000</div>
+                    <div class="stat-label">Today's Revenue</div>
+                </div>
+            </div>
+
+            <div class="glass-panel" style="padding: 0; overflow: hidden;">
+                <div style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0;">Active & Recent Bookings</h3>
+                    <button class="btn btn-secondary btn-small" onclick="refreshData()">↻ Refresh Tracker</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Booking ID</th>
+                                <th>Location</th>
+                                <th>Vehicle Info</th>
+                                <th>Slot</th>
+                                <th>Entry Time</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookings-table-body">
+                            <!-- Injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="glass-panel" style="padding: 0; overflow: hidden; margin-top: 2rem;">
+                <div style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <h3 style="margin: 0;">Add New Location</h3>
+                </div>
+                <div style="padding: 2rem;">
+                    <form id="add-location-form" onsubmit="event.preventDefault(); submitNewLocation();">
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label>Location Name</label>
+                                <input type="text" id="new-loc-name" required placeholder="e.g. City Downtown">
+                            </div>
+                            <div class="input-group">
+                                <label>Location Type</label>
+                                <select id="new-loc-type" required>
+                                    <option value="College">College</option>
+                                    <option value="Mall">Mall</option>
+                                    <option value="Apartment">Apartment</option>
+                                    <option value="Event">Event</option>
+                                    <option value="Street">Street</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group" style="align-self: flex-start;">
+                                <label>Total Slots</label>
+                                <input type="number" id="new-loc-slots" required min="1" max="1000" placeholder="e.g. 50">
+                                <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">Auto-calculated if floors are added.</small>
+                            </div>
+                            <div class="input-group" style="align-self: flex-start;">
+                                <label>Floor-wise Slots (Optional)</label>
+                                <div id="floor-container" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.5rem;"></div>
+                                <div>
+                                    <button type="button" class="btn btn-secondary btn-small" onclick="addFloorInput()">+ Add Floor</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label>Map Coordinates/Embed URL</label>
+                                <input type="url" id="new-loc-map" placeholder="https://maps.google.com/maps?...">
+                            </div>
+                            <div class="input-group">
+                                <label>Description</label>
+                                <input type="text" id="new-loc-desc" placeholder="Brief description of the parking area">
+                            </div>
+                        </div>
+                        <div class="actions mt-20" style="justify-content: flex-end;">
+                            <button type="submit" class="btn btn-primary">Save Location</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="data.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

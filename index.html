@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParkEase - Premium Parking Booking</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Background Elements for Aesthetics -->
+    <div class="bg-shape circle-1"></div>
+    <div class="bg-shape circle-2"></div>
+    
+    <div id="app-container">
+        <header>
+            <div class="logo">ParkEase<span>.</span></div>
+            <nav>
+                <a href="index.html" class="active">Book Spot</a>
+                <a href="admin.html">Admin Dashboard</a>
+            </nav>
+        </header>
+
+        <main id="main-view">
+            <!-- Progress Bar -->
+            <div class="progress-bar-container">
+                <div class="progress-track"></div>
+                <div class="progress-fill" id="progress-fill"></div>
+                <div class="step-indicators">
+                    <div class="step step-active" data-step="1">1</div>
+                    <div class="step" data-step="2">2</div>
+                    <div class="step" data-step="3">3</div>
+                    <div class="step" data-step="4">4</div>
+                    <div class="step" data-step="5">5</div>
+                </div>
+            </div>
+
+            <!-- View 1: Location Selection -->
+            <section id="view-location" class="view-section active">
+                <div class="section-header">
+                    <h2>Where are you going?</h2>
+                    <p>Select the type of location to find available parking.</p>
+                </div>
+                <div class="card-grid" id="locations-grid">
+                    <!-- Cards injected by JS -->
+                </div>
+            </section>
+
+            <!-- View 2: Vehicle & Time -->
+            <section id="view-details" class="view-section hidden">
+                <div class="section-header">
+                    <h2>Booking Details</h2>
+                    <p>Enter your vehicle and schedule information for <span id="loc-name-display" class="highlight"></span>.</p>
+                </div>
+                <div id="map-container" style="margin-bottom: 2rem; border-radius: 12px; overflow: hidden; height: 180px; display: none; border: 1px solid var(--glass-border);">
+                    <iframe id="map-iframe" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                </div>
+                <div class="form-container glass-panel">
+                    <form id="details-form">
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label for="vehicle-plate">Vehicle Registration Number</label>
+                                <input type="text" id="vehicle-plate" placeholder="e.g. DL-01-AB-1234" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="vehicle-type">Vehicle Type</label>
+                                <select id="vehicle-type" required>
+                                    <option value="Two Wheeler">Two Wheeler</option>
+                                    <option value="Four Wheeler">Four Wheeler</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label for="entry-time">Entry Date & Time</label>
+                                <input type="datetime-local" id="entry-time" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="duration">Duration (Hours)</label>
+                                <input type="number" id="duration" min="1" max="24" value="2" required>
+                            </div>
+                        </div>
+                        <div class="actions">
+                            <button type="button" class="btn btn-secondary" onclick="prevStep(1)">Back</button>
+                            <button type="button" class="btn btn-primary" onclick="submitDetails()">Continue to Slot Selection</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- View 3: Slot Selection -->
+            <section id="view-slots" class="view-section hidden">
+                <div class="section-header">
+                    <h2>Select a Slot</h2>
+                    <p>Choose an available parking space.</p>
+                </div>
+                <!-- Legend -->
+                <div class="slot-legend">
+                    <div class="legend-item"><span class="box available"></span> Available</div>
+                    <div class="legend-item"><span class="box occupied"></span> Occupied</div>
+                    <div class="legend-item"><span class="box selected"></span> Selected</div>
+                </div>
+                <!-- Floor Selector -->
+                <div class="floor-selector glass-panel mt-10" style="padding: 10px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+                    <label for="floor-select" style="font-weight: 500;">Select Floor:</label>
+                    <select id="floor-select" onchange="changeFloor()" style="width: auto; padding: 5px 10px; border-radius: 8px; background: rgba(0,0,0,0.1); border: 1px solid var(--glass-border); color: inherit;">
+                    </select>
+                </div>
+                <!-- Parking Grid -->
+                <div class="parking-layout glass-panel">
+                    <div class="driving-lane">Driveway</div>
+                    <div id="slot-grid" class="slot-grid">
+                        <!-- Slots injected by JS -->
+                    </div>
+                </div>
+                <div class="actions mt-30">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep(2)">Back</button>
+                    <button type="button" class="btn btn-primary" id="btn-confirm-slot" onclick="confirmSlot()" disabled>Proceed to Payment</button>
+                </div>
+            </section>
+
+            <!-- View 4: Payment Integration -->
+            <section id="view-payment" class="view-section hidden">
+                <div class="section-header">
+                    <h2>Complete Payment</h2>
+                    <p>Securely pay for your parking reservation.</p>
+                </div>
+                <div class="checkout-layout">
+                    <!-- Summary -->
+                    <div class="summary-card glass-panel">
+                        <h3>Booking Summary</h3>
+                        <div class="summary-item">
+                            <span>Location:</span> <span id="sum-location"></span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Vehicle:</span> <span id="sum-vehicle"></span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Floor:</span> <span id="sum-floor"></span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Slot:</span> <span id="sum-slot" class="highlight"></span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Duration:</span> <span id="sum-duration"></span>
+                        </div>
+                        <div class="summary-total">
+                            <span>Total Due:</span> <span id="sum-price" class="price-tag">₹0</span>
+                        </div>
+                    </div>
+                    <!-- Payment Form -->
+                    <div class="payment-card glass-panel">
+                        <h3>Payment Method</h3>
+                        <div class="payment-methods">
+                            <div class="method active" onclick="setPaymentMethod('card')">Credit Card</div>
+                            <div class="method" onclick="setPaymentMethod('upi')">UPI / Scan & Pay</div>
+                        </div>
+                        <form id="payment-form">
+                            <div id="card-fields">
+                            <div class="input-group">
+                                <label>Cardholder Name</label>
+                                <input type="text" placeholder="John Doe" value="John Doe">
+                            </div>
+                            <div class="input-group">
+                                <label>Card Number</label>
+                                <input type="text" placeholder="**** **** **** 4242" value="4242 4242 4242 4242">
+                            </div>
+                            <div class="form-row">
+                                <div class="input-group">
+                                    <label>Expiry</label>
+                                    <input type="text" placeholder="MM/YY" value="12/28">
+                                </div>
+                                <div class="input-group">
+                                    <label>CVC</label>
+                                    <input type="text" placeholder="123" value="123">
+                                </div>
+                            </div>
+                            </div>
+                            <div id="upi-fields" style="display: none; text-align: center; padding: 1rem;">
+                                <div style="margin-bottom: 1.5rem;">
+                                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">UPI ID: <span style="color: var(--text-main); font-weight: 600;">parkease@hdfcbank</span></p>
+                                    <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                        <div style="height: 1px; background: var(--glass-border); flex: 1;"></div>
+                                        <span style="font-size: 0.8rem; color: var(--text-muted);">OR SCAN QR</span>
+                                        <div style="height: 1px; background: var(--glass-border); flex: 1;"></div>
+                                    </div>
+                                </div>
+                                <div class="payment-qr" style="background: white; padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 1rem; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative;">
+                                    <div style="position: absolute; top:0; left:0; width:100%; height:100%; border: 2px solid var(--primary); border-radius: 12px; pointer-events: none; opacity: 0.2;"></div>
+                                    <img src="" id="payment-qr-image" alt="UPI QR" style="width: 180px; height: 180px;">
+                                </div>
+                                <div style="font-size: 1.2rem; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem;">₹<span id="upi-amount">0</span></div>
+                                <p style="font-size: 0.85rem; margin-bottom: 1.5rem; color: var(--text-muted);">Confirming payment opens the gate barrier automatically.</p>
+                                <button type="button" class="btn btn-primary" onclick="simulatePayment(this)" style="width: auto; padding: 0.6rem 2rem;">I've Paid - Open Gate</button>
+                            </div>
+                            <div class="actions mt-20">
+                                <button type="button" class="btn btn-secondary" onclick="prevStep(3)">Back</button>
+                                <button type="button" class="btn btn-primary btn-pay" onclick="simulatePayment(this)">Pay & Confirm</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- View 5: Confirmation & QR Pass -->
+            <section id="view-pass" class="view-section hidden">
+                <div class="success-header">
+                    <div class="success-icon">✓</div>
+                    <h2>Booking Confirmed!</h2>
+                    <p>Your parking slot has been successfully reserved.</p>
+                </div>
+                <div class="pass-container glass-panel">
+                    <div class="pass-header">
+                        <h3>Digital Entry Pass</h3>
+                        <span class="status-badge">Active</span>
+                    </div>
+                    <div class="pass-body">
+                        <div class="qr-code">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PARKEASE-MOCK-ID" alt="QR Code" id="qr-image">
+                        </div>
+                        <div class="pass-details">
+                            <div class="pass-row">
+                                <span class="label">Booking ID</span>
+                                <span class="value" id="pass-id">#PE-10294</span>
+                            </div>
+                            <div class="pass-row">
+                                <span class="label">Floor</span>
+                                <span class="value" id="pass-floor">Ground</span>
+                            </div>
+                            <div class="pass-row">
+                                <span class="label">Slot Number</span>
+                                <span class="value highlight-text" id="pass-slot">A-12</span>
+                            </div>
+                            <div class="pass-row">
+                                <span class="label">Registration Number</span>
+                                <span class="value" id="pass-plate">DL-01-AB-1234</span>
+                            </div>
+                            <div class="pass-row">
+                                <span class="label">Valid Until</span>
+                                <span class="value" id="pass-time">Oct 24, 14:00</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pass-footer">
+                        Scan this QR code at the entrance barrier.
+                    </div>
+                </div>
+                <div class="actions center mt-30">
+                    <button class="btn btn-secondary" onclick="resetApp()">Book Another Spot</button>
+                    <button class="btn btn-primary" onclick="window.print()">Download / Print Pass</button>
+                </div>
+            </section>
+    </div>
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
